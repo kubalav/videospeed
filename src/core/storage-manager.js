@@ -32,7 +32,7 @@ if (!window.VSC.StorageManager) {
       if (hasChrome) {
         return new Promise((resolve) => {
           chrome.storage.sync.get(defaults, (storage) => {
-            window.VSC.logger?.debug?.('StorageManager: settings from chrome.storage');
+            globalThis.window?.VSC?.logger?.debug?.('StorageManager: settings from chrome.storage');
             resolve(storage);
           });
         });
@@ -108,7 +108,7 @@ if (!window.VSC.StorageManager) {
               reject(error);
               return;
             }
-            window.VSC.logger?.debug?.('StorageManager: saved to chrome.storage');
+            globalThis.window?.VSC?.logger?.debug?.('StorageManager: saved to chrome.storage');
             resolve();
           });
         });
