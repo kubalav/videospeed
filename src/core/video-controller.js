@@ -378,10 +378,13 @@ class VideoController {
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
 
-    this.remainingTimeIndicator.textContent =
+    const remainingTimeText =
       hours > 0
         ? `-${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
         : `-${minutes}:${String(seconds).padStart(2, '0')}`;
+
+    this.remainingTimeIndicator.textContent = remainingTimeText;
+    this.remainingTimeIndicator.style.minWidth = hours > 0 ? '58px' : '0';
   }
 
   /**

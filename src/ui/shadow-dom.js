@@ -107,7 +107,7 @@ class ShadowDOMManager {
         cursor: -webkit-grab;
         display: block;
         margin-top: 4px;
-        min-width: 58px;
+        min-width: 0;
         text-align: center;
         touch-action: none;
         user-select: none;
