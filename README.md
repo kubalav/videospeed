@@ -48,9 +48,10 @@ we don't read at a fixed pace, and we shouldn't watch at one either.
   CSS rules.
 
 ## New features (this fork)
-- Added a remaining time display under the video speed controller. Remaining time is calculated based on the current playbackRate, so faster playback shows the real remaining watch time.
-- Added Fullscreen as a configurable shortcut action in Options > Shortcuts.
+- Added a remaining time display under the video speed controller. Remaining time is calculated based on the current playbackRate, so faster playback shows the real remaining watch time
+- Added Fullscreen as a configurable shortcut action in Options > Shortcuts
 - Added close and Reset buttons
+- Enables dragging of the speed indicator and automatically saves its position on drag end (Reset to default position = Ctrl + double click on speed indicator)
 
 ## Default keyboard shortcuts
 
