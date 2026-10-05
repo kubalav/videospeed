@@ -40,6 +40,7 @@ if (!window.VSC.Constants.DEFAULT_SETTINGS) {
     controllerOpacity: 0.3, // default: 0.3
     controllerButtonSize: 14,
     showRemainingTime: true,
+    controllerPositions: {}, // per-hostname dragged controller position
     customCSS: '', // user's additional CSS injected alongside the built-in defaults
     keyBindings: PREDEFINED_ACTIONS.map((action) => ({
       action,

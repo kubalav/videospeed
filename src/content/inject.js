@@ -190,6 +190,7 @@ class VideoSpeedExtension {
       this.eventManager = new this.EventManager(this.config, null);
       this.actionHandler = new this.ActionHandler(this.config, this.eventManager);
       this.eventManager.actionHandler = this.actionHandler;
+      this.config.onRemoteSpeed = (speed) => this.eventManager.arbitration.applyRemoteSpeed(speed);
 
       this.setupObservers();
 

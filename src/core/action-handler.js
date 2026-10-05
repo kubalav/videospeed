@@ -597,6 +597,7 @@ class ActionHandler {
       return;
     }
     speedIndicator.textContent = numericSpeed.toFixed(2);
+    video.vsc?.alignIndicators?.();
 
     if (video.vsc?.div) {
       this.flashController(video.vsc.div);

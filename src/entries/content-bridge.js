@@ -17,6 +17,32 @@ import { matchSiteRule } from '../utils/site-pattern.js';
 // Duplicated from constants.js (ISOLATED world can't import page modules).
 const SPEED_MIN = 0.07;
 const SPEED_MAX = 16;
+const POSITION_LIMIT = 100000;
+const MAX_SAVED_POSITIONS = 100;
+
+const isCoordinate = (value) =>
+  typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= POSITION_LIMIT;
+
+async function saveControllerPosition(position) {
+  const host = location.hostname.replace(/^www\./, '');
+  const stored = await chrome.storage.sync.get({ controllerPositions: {} });
+  const positions = { ...stored.controllerPositions };
+
+  if (position === null) {
+    delete positions[host];
+  } else {
+    delete positions[host];
+    positions[host] = { top: Math.round(position.top), left: Math.round(position.left) };
+    // Stay well below the per-item sync quota by evicting the oldest entries.
+    for (const key of Object.keys(positions)) {
+      if (Object.keys(positions).length <= MAX_SAVED_POSITIONS) {
+        break;
+      }
+      delete positions[key];
+    }
+  }
+  await chrome.storage.sync.set({ controllerPositions: positions });
+}
 
 const docEl = document.documentElement;
 let bridgeInitialized = false;
@@ -129,7 +155,16 @@ function init() {
           return;
         }
 
-        // Only lastSpeed can cross from MAIN into extension storage.
+        if ('controllerPosition' in data) {
+          const position = data.controllerPosition;
+          if (position === null || (isCoordinate(position?.top) && isCoordinate(position?.left))) {
+            saveControllerPosition(position).catch((error) => {
+              console.error('[VSC] Saving controller position failed:', error);
+            });
+          }
+        }
+
+        // Only lastSpeed and controllerPosition can cross from MAIN into extension storage.
         if ('lastSpeed' in data) {
           const speed = data.lastSpeed;
           if (typeof speed === 'number' && Number.isFinite(speed)) {

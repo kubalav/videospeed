@@ -92,8 +92,9 @@ describe('UIToStorageFlow', () => {
     // Verify complete flow for non-persistent mode
     expect(mockVideo.playbackRate).toBe(1.5); // Video speed changed
     expect(controller.speedIndicator.textContent).toBe('1.50'); // UI updated
-    // With rememberSpeed = false, no storage saves should occur
-    expect(savedData.length).toBe(0); // No storage saves in non-persistent mode
+    // lastSpeed is always saved so other tabs can follow
+    expect(savedData.length).toBe(1);
+    expect(savedData[0]).toEqual({ lastSpeed: 1.5 });
   });
 
   it('Full flow: external ratechange → fight-back → restore speed', async () => {
@@ -190,8 +191,9 @@ describe('UIToStorageFlow', () => {
     expect(controller1.speedIndicator.textContent).toBe('1.25');
     expect(controller2.speedIndicator.textContent).toBe('1.75');
 
-    // With non-persistent mode, no storage saves should occur
-    expect(savedData.length).toBe(0); // No saves with rememberSpeed = false
+    // lastSpeed is always saved so other tabs can follow
+    expect(savedData.length).toBe(2);
+    expect(savedData[1]).toEqual({ lastSpeed: 1.75 });
   });
 
   it('Full flow: speed limits enforcement → clamping', async () => {

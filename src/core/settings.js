@@ -43,6 +43,7 @@ if (!window.VSC.VideoSpeedConfig) {
             // echoing back (chrome fires onChanged in the writing context
             // too), which a self-echo token previously had to detect.
             if (key === 'lastSpeed') {
+              this._handleRemoteSpeed(change.newValue);
               continue;
             }
 
@@ -55,6 +56,57 @@ if (!window.VSC.VideoSpeedConfig) {
         // Non-fatal — the listener just won't be active.
         window.VSC.logger.debug(`Could not set up storage change listener: ${e.message}`);
       }
+    }
+
+    /**
+     * Adopt a speed written by another tab. Echoes of this context's own
+     * debounced writes are recognised by value and ignored.
+     * @param {number} speed
+     * @private
+     */
+    _handleRemoteSpeed(speed) {
+      const now = Date.now();
+      this._ownSpeedWrites = (this._ownSpeedWrites || []).filter((w) => now - w.at <= 5000);
+      const echoIndex = this._ownSpeedWrites.findIndex((w) => w.speed === speed);
+      if (echoIndex !== -1) {
+        this._ownSpeedWrites.splice(echoIndex, 1);
+        return;
+      }
+      if (typeof speed !== 'number' || !Number.isFinite(speed) || speed === this.settings.lastSpeed) {
+        return;
+      }
+      this.onRemoteSpeed?.(speed);
+    }
+
+    /**
+     * Saved controller position for the current site, if any.
+     * @returns {{top: number, left: number}|null}
+     */
+    getSavedControllerPosition() {
+      const host = window.location.hostname.replace(/^www\./, '');
+      const position = this.settings.controllerPositions?.[host];
+      if (Number.isFinite(position?.top) && Number.isFinite(position?.left)) {
+        return position;
+      }
+      return null;
+    }
+
+    /**
+     * Remember the dragged controller position for the current site.
+     * @param {{top: number, left: number}|null} position - null clears it
+     */
+    saveControllerPosition(position) {
+      const host = window.location.hostname.replace(/^www\./, '');
+      const positions = { ...this.settings.controllerPositions };
+      if (position) {
+        positions[host] = position;
+      } else {
+        delete positions[host];
+      }
+      this.settings.controllerPositions = positions;
+      window.VSC.StorageManager.set({ controllerPosition: position }).catch((error) => {
+        window.VSC.logger.error(`Failed to save controller position: ${error.message}`);
+      });
     }
 
     /**
@@ -164,6 +216,7 @@ if (!window.VSC.VideoSpeedConfig) {
         this.settings.controllerOpacity = Number(storage.controllerOpacity);
         this.settings.controllerButtonSize = Number(storage.controllerButtonSize);
         this.settings.showRemainingTime = storage.showRemainingTime !== false;
+        this.settings.controllerPositions = storage.controllerPositions || {};
         // One-time migration: drop legacy controllerCSS key, reset to new model.
         if (storage.controllerCSS !== null) {
           window.VSC.StorageManager.remove(['controllerCSS']);
@@ -213,9 +266,8 @@ if (!window.VSC.VideoSpeedConfig) {
      */
     persistAuthority(speed) {
       this.settings.lastSpeed = speed;
-      if (this.settings.rememberSpeed) {
-        this.save({ lastSpeed: speed });
-      }
+      // Always written so other tabs can follow; load() only restores it when rememberSpeed is on.
+      this.save({ lastSpeed: speed });
     }
 
     async save(newSettings = {}) {
@@ -249,6 +301,10 @@ if (!window.VSC.VideoSpeedConfig) {
           const speedToSave = this.pendingSave;
           this.pendingSave = null;
           this.saveTimer = null;
+          (this._ownSpeedWrites = this._ownSpeedWrites || []).push({
+            speed: speedToSave,
+            at: Date.now(),
+          });
 
           try {
             await window.VSC.StorageManager.set({ lastSpeed: speedToSave });

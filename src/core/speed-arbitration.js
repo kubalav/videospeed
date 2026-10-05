@@ -180,6 +180,37 @@ class SpeedArbitration {
    */
   claimAuthority(speed) {
     this.config.persistAuthority(speed);
+    this.advanceEpoch();
+  }
+
+  /**
+   * Adopt a speed chosen in another tab as this document's authority and
+   * apply it to every controlled media element. Never persists (the other
+   * tab already did).
+   * @param {number} speed
+   */
+  applyRemoteSpeed(speed) {
+    const A = window.VSC.SpeedArbiter;
+    this.config.settings.lastSpeed = speed;
+    this.advanceEpoch();
+
+    const media = window.VSC.stateManager ? window.VSC.stateManager.getControlledElements() : [];
+    for (const video of media) {
+      if (!video.vsc) {
+        continue;
+      }
+      const { state, conflict } = this.stateFor(video);
+      const result = A.step(state, { type: A.EVENTS.USER_SET, speed });
+      this.applyState(conflict, result.state);
+      this.eventManager?.actionHandler?.writeRate(video, speed);
+      this.eventManager?.actionHandler?.syncIndicator(video, speed);
+    }
+  }
+
+  /**
+   * @private
+   */
+  advanceEpoch() {
     this.authorityEpoch += 1;
 
     // Old timers should not keep running after their entire authority epoch

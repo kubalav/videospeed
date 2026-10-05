@@ -16,7 +16,7 @@ class ControlsManager {
    * @param {HTMLVideoElement} video - Associated video element
    */
   setupControlEvents(shadow, video) {
-    this.setupDragHandler(shadow);
+    this.setupDragHandler(shadow, video);
     this.setupButtonHandlers(shadow);
     this.setupWheelHandler(shadow, video);
     this.setupClickPrevention(shadow);
@@ -26,15 +26,35 @@ class ControlsManager {
    * Set up drag and double-click-to-reset handlers for speed indicator
    * Uses pointer events for unified mouse + touch support
    * @param {ShadowRoot} shadow - Shadow root
+   * @param {HTMLVideoElement} video - Associated video element
    * @private
    */
-  setupDragHandler(shadow) {
+  setupDragHandler(shadow, video) {
     const dragHandles = [
       shadow.querySelector('.draggable'),
       this.config.settings.showRemainingTime ? shadow.querySelector('.vsc-remaining-time') : null,
     ].filter(Boolean);
 
     dragHandles.forEach((handle) => {
+      // Ctrl+double-click restores the default position and forgets the saved one
+      handle.addEventListener(
+        'dblclick',
+        (e) => {
+          if (!e.ctrlKey) {
+            return;
+          }
+          const controller = shadow.querySelector('#controller');
+          const def = video?.vsc?.defaultPosition || { top: 0, left: 0 };
+          controller.style.top = `${def.top}px`;
+          controller.style.left = `${def.left}px`;
+          this.config.saveControllerPosition?.(null);
+          e.stopImmediatePropagation();
+          e.stopPropagation();
+          e.preventDefault();
+        },
+        true
+      );
+
       // Pointer-based drag (unified mouse + touch)
       handle.addEventListener(
         'pointerdown',

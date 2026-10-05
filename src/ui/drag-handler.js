@@ -25,6 +25,7 @@ class DragHandler {
     ];
 
     const draggable = e.target;
+    let moved = false;
 
     // Capture pointer so all move/up events route here regardless of position
     if (e.pointerId !== undefined) {
@@ -32,6 +33,7 @@ class DragHandler {
     }
 
     const onMove = (ev) => {
+      moved = true;
       const dx = ev.clientX - initialXY[0];
       const dy = ev.clientY - initialXY[1];
       shadowController.style.left = `${initialControllerXY[0] + dx}px`;
@@ -48,6 +50,14 @@ class DragHandler {
 
       shadowController.classList.remove('dragging');
       video.classList.remove('vcs-dragging');
+
+      if (moved && video.vsc?.config?.saveControllerPosition) {
+        const top = parseInt(shadowController.style.top) || 0;
+        const left = parseInt(shadowController.style.left) || 0;
+        const def = video.vsc.defaultPosition || { top: 0, left: 0 };
+        const isDefault = top === def.top && left === def.left;
+        video.vsc.config.saveControllerPosition(isDefault ? null : { top, left });
+      }
 
       window.VSC.logger.debug('Drag operation completed');
     };

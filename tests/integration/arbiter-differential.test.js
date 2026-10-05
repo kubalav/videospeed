@@ -223,9 +223,8 @@ function arbApply(world, effects) {
         world.register = round2(e.speed);
         break;
       case A.EFFECTS.PERSIST:
-        if (world.rememberEnabled) {
-          world.stored = round2(e.speed);
-        }
+        // lastSpeed is always written so other tabs can follow
+        world.stored = round2(e.speed);
         break;
       case A.EFFECTS.SYNC_UI:
         break;

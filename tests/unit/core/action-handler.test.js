@@ -694,8 +694,8 @@ describe('ActionHandler', () => {
     await actionHandler.adjustSpeed(video1, 1.5);
     await actionHandler.adjustSpeed(video2, 2.0);
 
-    // With rememberSpeed = false, no speeds should be persisted to storage
-    expect(savedCalls.length).toBe(0);
+    // lastSpeed is always saved so other tabs can follow
+    expect(savedCalls).toEqual([{ lastSpeed: 1.5 }, { lastSpeed: 2.0 }]);
 
     // Videos should still have their playback rates set
     expect(video1.playbackRate).toBe(1.5);
@@ -1160,8 +1160,8 @@ describe('ActionHandler', () => {
     // lastSpeed should be updated in memory for session persistence
     expect(config.settings.lastSpeed).toBe(1.4);
 
-    // No storage saves should occur
-    expect(savedCalls.length).toBe(0);
+    // lastSpeed is always saved so other tabs can follow
+    expect(savedCalls).toEqual([{ lastSpeed: 1.4 }]);
 
     // Simulate play event (which asks the arbiter for the lifecycle target)
     const targetSpeed = video.vsc.arbitration.lifecycleTarget(video);

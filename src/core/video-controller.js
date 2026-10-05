@@ -180,13 +180,23 @@ class VideoController {
     // the inner controller stays at (0,0) and the CSS nudge handles placement.
     // Otherwise (wrapper is absolute), compute coordinates for generic sites.
     const computedPosition = getComputedStyle(wrapper).position;
+    const innerController = window.VSC.ShadowDOMManager.getController(shadow);
+    let defaultPosition = { top: 0, left: 0 };
     if (computedPosition !== 'relative') {
       const position = window.VSC.ShadowDOMManager.calculatePosition(this.video);
-      const innerController = window.VSC.ShadowDOMManager.getController(shadow);
+      defaultPosition = { top: parseInt(position.top) || 0, left: parseInt(position.left) || 0 };
       if (innerController) {
         innerController.style.top = position.top;
         innerController.style.left = position.left;
       }
+    }
+    this.defaultPosition = defaultPosition;
+
+    // A position the user dragged to on this site overrides the computed default.
+    const savedPosition = this.config.getSavedControllerPosition?.();
+    if (savedPosition && innerController) {
+      innerController.style.top = `${savedPosition.top}px`;
+      innerController.style.left = `${savedPosition.left}px`;
     }
 
     window.VSC.logger.debug('initializeControls End');
@@ -367,6 +377,7 @@ class VideoController {
     const { duration, currentTime, playbackRate } = this.video;
     if (!Number.isFinite(duration) || duration <= 0 || !Number.isFinite(currentTime)) {
       this.remainingTimeIndicator.textContent = '-:--';
+      this.alignIndicators();
       return;
     }
 
@@ -385,6 +396,60 @@ class VideoController {
 
     this.remainingTimeIndicator.textContent = remainingTimeText;
     this.remainingTimeIndicator.style.minWidth = hours > 0 ? '58px' : '0';
+    this.alignIndicators();
+  }
+
+  /**
+   * Shift the speed and remaining-time rows horizontally so the speed's decimal
+   * point sits above the last colon of the remaining time.
+   */
+  alignIndicators() {
+    const speedEl = this.speedIndicator;
+    const timeEl = this.remainingTimeIndicator;
+    if (!speedEl || !timeEl) {
+      return;
+    }
+
+    const separatorOffset = (el, separator) => {
+      const node = el.firstChild;
+      const index = node?.textContent.lastIndexOf(separator) ?? -1;
+      if (node?.nodeType !== Node.TEXT_NODE || index === -1) {
+        return null;
+      }
+      const range = el.ownerDocument.createRange();
+      if (typeof range.getBoundingClientRect !== 'function') {
+        return null;
+      }
+      range.setStart(node, 0);
+      range.setEnd(node, node.length);
+      const whole = range.getBoundingClientRect();
+      range.setStart(node, index);
+      range.setEnd(node, index + 1);
+      const sep = range.getBoundingClientRect();
+      if (whole.width === 0) {
+        return null;
+      }
+      return (sep.left + sep.right) / 2 - (whole.left + whole.right) / 2;
+    };
+
+    // From 10 minutes up the time is wide, so keep both rows plainly centered.
+    if (/^-(\d+:)?\d{2,}:/.test(timeEl.textContent)) {
+      speedEl.style.transform = '';
+      timeEl.style.transform = '';
+      return;
+    }
+
+    const speedOffset = separatorOffset(speedEl, '.');
+    const timeOffset = separatorOffset(timeEl, ':');
+    if (speedOffset === null || timeOffset === null) {
+      return;
+    }
+
+    // Measured rects include the current shift, but the offsets are relative to
+    // each row's own text, so the shift cancels out.
+    const mean = (speedOffset + timeOffset) / 2;
+    speedEl.style.transform = `translateX(${(mean - speedOffset).toFixed(2)}px)`;
+    timeEl.style.transform = `translateX(${(mean - timeOffset).toFixed(2)}px)`;
   }
 
   /**

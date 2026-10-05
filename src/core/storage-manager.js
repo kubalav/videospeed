@@ -114,8 +114,14 @@ if (!window.VSC.StorageManager) {
         });
       }
 
-      // Only lastSpeed can cross the trust boundary to chrome.storage
+      // Only lastSpeed and controllerPosition can cross the trust boundary to chrome.storage
       const keys = Object.keys(data);
+      if (keys.length === 1 && keys[0] === 'controllerPosition') {
+        docEl.dispatchEvent(
+          new CustomEvent('VSC_WRITE_STORAGE', { detail: { controllerPosition: data.controllerPosition } })
+        );
+        return Promise.resolve();
+      }
       if (keys.length === 1 && keys[0] === 'lastSpeed') {
         const speed = data.lastSpeed;
         if (typeof speed === 'number' && Number.isFinite(speed)) {
